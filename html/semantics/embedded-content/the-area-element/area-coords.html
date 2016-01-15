@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset=utf-8>
-<title>HTMLAreaElement coords parsing</title>
+<title>HTMLAreaElement coords, shape</title>
 <script src=/resources/testharness.js></script>
 <script src=/resources/testharnessreport.js></script>
 <style>
@@ -11,11 +11,15 @@
 <script>
 setup({explicit_done: true});
 
-var hitRect = [[area, 3, 3], [area, 9, 9], [img, 1, 3], [img, 3, 1], [img, 11, 9], [img, 9, 11]];
-var hitNone = [[img, 3, 3], [img, 9, 9], [img, 1, 3], [img, 3, 1], [img, 11, 9], [img, 9, 11]];
+var hitRect = [[area, 3, 3], [area, 9, 9], [img, 1, 3], [img, 3, 1], [img, 11, 9], [img, 9, 11], [img, 21, 41], [img, 101, 101]];
+var hitNone = [[img, 3, 3], [img, 9, 9], [img, 1, 3], [img, 3, 1], [img, 11, 9], [img, 9, 11], [img, 21, 41], [img, 101, 101]];
+var hitAll = [[area, 1, 1], [area, 1, 299], [area, 299, 1], [area, 299, 299], [area, 21, 41], [area, 101, 101]];
+var hitCircle = [[area, 11, 40], [area, 29, 40], [area, 20, 31], [area, 20, 49], [img, 12, 32], [img, 28, 48], [img, 101, 101]];
+var hitPoly = [[area, 101, 101], [area, 119, 101], [area, 101, 119], [img, 118, 118], [img, 3, 3], [img, 21, 41]];
+var hitStar = [[area, 101, 101], [area, 199, 101], [area, 150, 51], [img, 150, 150], [img, 3, 3], [img, 21, 41]];
 
 var tests = [
-  {desc: 'sanity-check', shape: 'rect', coords: "2,2,10,10", hit: hitRect},
+  {desc: 'COMMA', shape: 'rect', coords: "2,2,10,10", hit: hitRect},
   {desc: 'SEMICOLON', shape: 'rect', coords: "2;2;10;10", hit: hitRect},
   {desc: 'SPACE', shape: 'rect', coords: "2 2 10 10", hit: hitRect},
   {desc: 'TAB', shape: 'rect', coords: "2\t2\t10\t10", hit: hitRect},
@@ -25,31 +29,69 @@ var tests = [
   {desc: 'LINE TABULATION', shape: 'rect', coords: "2\u000b2\u000b10\u000b10", hit: hitNone},
   {desc: 'LINE NEXT', shape: 'rect', coords: "2\u00852\u008510\u008510", hit: hitNone},
   {desc: 'EN QUAD', shape: 'rect', coords: "2\u20002\u200010\u200010", hit: hitNone},
-  {desc: 'abc garbage between numbers', shape: 'rect', coords: "2a2b20c20,2,10,10", hit: hitRect},
-  {desc: ': garbage between numbers', shape: 'rect', coords: "2:2:20:20,2,10,10", hit: hitRect},
-  {desc: 'leading comma', shape: 'rect', coords: ",2,2,10,10", hit: hitRect},
-  {desc: 'leading space', shape: 'rect', coords: " 2,2,10,10", hit: hitRect},
-  {desc: 'leading semi-colon', shape: 'rect', coords: ";2,2,10,10", hit: hitRect},
+  {desc: 'abc between numbers', shape: 'rect', coords: "2a2b20c20,2,10,10", hit: hitRect},
+  {desc: 'COLON between numbers', shape: 'rect', coords: "2:2:20:20,2,10,10", hit: hitRect},
+  {desc: 'U+0000 between numbers', shape: 'rect', coords: "2\u00002\u000020\u000020,2,10,10", hit: hitRect},
+  {desc: 'leading COMMA', shape: 'rect', coords: ",2,2,10,10", hit: hitRect},
+  {desc: 'leading SPACE', shape: 'rect', coords: " 2,2,10,10", hit: hitRect},
+  {desc: 'leading SEMICOLON', shape: 'rect', coords: ";2,2,10,10", hit: hitRect},
   {desc: 'too few numbers', shape: 'rect', coords: "2,2,10", hit: hitNone},
-  {desc: 'trailing comma', shape: 'rect', coords: "2,2,10,", hit: hitNone},
-  {desc: 'trailing space', shape: 'rect', coords: "2,2,10 ", hit: hitNone},
-  {desc: 'trailing semi-colon', shape: 'rect', coords: "2,2,10;", hit: hitNone},
-  {desc: 'percent', shape: 'rect', coords: "2%,2%,10%,10%", hit: hitRect},
+  {desc: 'trailing COMMA', shape: 'rect', coords: "2,2,10,", hit: hitNone},
+  {desc: 'trailing SPACE', shape: 'rect', coords: "2,2,10 ", hit: hitNone},
+  {desc: 'trailing SEMICOLON', shape: 'rect', coords: "2,2,10;", hit: hitNone},
+  {desc: 'PERCENT', shape: 'rect', coords: "2%,2%,10%,10%", hit: hitRect},
   {desc: 'float', shape: 'rect', coords: "1.4,1.4,10,10", hit: hitRect},
-  {desc: 'number starting with dot', shape: 'rect', coords: ".4,.4,10,10", hit: [[area, 1, 1], [img, 0, 0]]},
+  {desc: 'number starting with PERIOD', shape: 'rect', coords: ".4,.4,10,10", hit: [[area, 1, 1], [img, 0, 0]]},
   {desc: 'sci-not', shape: 'rect', coords: "2,2,1e1,1e1", hit: hitRect},
   {desc: 'leading/trailing garbage', shape: 'rect', coords: "='2,2,10,10' ", hit: hitRect},
   {desc: 'non-ascii garbage', shape: 'rect', coords: "“2,2,10,10\"", hit: hitRect},
   {desc: 'URL garbage with number', shape: 'rect', coords: "2,2,10ls/spain/holidays/regions/10/Canary+Islands/Canary+Islands.html", hit: hitNone},
-  {desc: 'consecutive commas', shape: 'rect', coords: "2,,10,10", hit: hitNone},
+  {desc: 'consecutive COMMAs', shape: 'rect', coords: "2,,10,10", hit: hitNone},
+  {desc: 'consecutive SPACEs', shape: 'rect', coords: "2  10,10", hit: hitNone},
+  {desc: 'consecutive SEMICOLONs', shape: 'rect', coords: "2;;10,10", hit: hitNone},
+  {desc: 'several consecutive separators', shape: 'rect', coords: ",,2;,;2,;,10 \t\r\n10;;", hit: hitRect},
+  {desc: 'negative', shape: 'rect', coords: "-10,-10,10,10", hit: [[area, 1, 1], [img, 299, 299]]},
   {desc: 'empty string', shape: 'rect', coords: "", hit: hitNone},
-  // TODO(zcorpan): test other shapes
+  {desc: 'omitted coords', shape: 'rect', coords: null, hit: hitNone},
+
+  {desc: 'missing value default', shape: null, coords: "2,2,10,10", hit: hitRect},
+  {desc: 'missing value default', shape: null, coords: "20,40,10", hit: hitNone},
+  {desc: 'missing value default', shape: null, coords: null, hit: hitNone},
+  {desc: 'invalid value default', shape: 'foobar invalid', coords: "2,2,10,10", hit: hitRect},
+  {desc: 'invalid value default', shape: '', coords: "2,2,10,10", hit: hitRect},
+
+  {desc: 'negative', shape: 'default', coords: "-10,-10,-10,-10", hit: hitAll},
+  {desc: 'empty string', shape: 'default', coords: "", hit: hitAll},
+  {desc: 'omitted coords', shape: 'DEFAULT', coords: null, hit: hitAll},
+
+  {desc: 'simple', shape: 'circle', coords: "20,40,10", hit: hitCircle},
+  {desc: 'simple', shape: 'circ', coords: "20,40,10", hit: hitCircle},
+  {desc: 'simple', shape: 'CIRCLE', coords: "20,40,10", hit: hitCircle},
+  {desc: 'simple', shape: 'CIRC', coords: "20,40,10", hit: hitCircle},
+  {desc: 'LATIN CAPITAL LETTER I WITH DOT ABOVE', shape: 'C\u0130RCLE', coords: "20,40,10", hit: hitNone},
+  {desc: 'LATIN SMALL LETTER DOTLESS I', shape: 'c\u0131rcle', coords: "20,40,10", hit: hitNone},
+
+  {desc: 'simple', shape: 'poly', coords: "100,100,120,100,100,120", hit: hitPoly},
+  {desc: 'simple', shape: 'polygon', coords: "100,100,120,100,100,120", hit: hitPoly},
+  {desc: 'too few numbers', shape: 'poly', coords: "100,100,120,100,100", hit: hitNone},
+  {desc: 'one too many numbers', shape: 'poly', coords: "100,100,120,100,100,120,300", hit: hitPoly},
+  {desc: 'one too many numbers, trailing COMMA', shape: 'poly', coords: "100,100,120,100,100,120,300,", hit: hitPoly},
+  {desc: 'even-odd rule', shape: 'poly', coords: "100,100,200,100,100,200,150,50,200,200", hit: hitStar},
+
 ];
 onload = function() {
   tests.forEach(function(t) {
     test(function(t_obj) {
-      area.shape = t.shape;
-      area.coords = t.coords;
+      if (area.shape === null) {
+        area.removeAttribute('shape');
+      } else {
+        area.shape = t.shape;
+      }
+      if (area.coords === null) {
+        area.removeAttribute('coords');
+      } else {
+        area.coords = t.coords;
+      }
       t.hit.forEach(function(arr) {
         var expected = arr[0];
         var x = arr[1];

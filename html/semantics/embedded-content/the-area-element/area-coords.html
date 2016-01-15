@@ -40,6 +40,7 @@ var tests = [
   {desc: 'trailing SPACE', shape: 'rect', coords: "2,2,10 ", hit: hitNone},
   {desc: 'trailing SEMICOLON', shape: 'rect', coords: "2,2,10;", hit: hitNone},
   {desc: 'PERCENT', shape: 'rect', coords: "2%,2%,10%,10%", hit: hitRect},
+  {desc: 'CSS units', shape: 'rect', coords: "2in,2in,10cm,10cm", hit: hitRect},
   {desc: 'float', shape: 'rect', coords: "1.4,1.4,10,10", hit: hitRect},
   {desc: 'number starting with PERIOD', shape: 'rect', coords: ".4,.4,10,10", hit: [[area, 1, 1], [img, 0, 0]]},
   {desc: 'sci-not', shape: 'rect', coords: "2,2,1e1,1e1", hit: hitRect},
@@ -53,6 +54,9 @@ var tests = [
   {desc: 'negative', shape: 'rect', coords: "-10,-10,10,10", hit: [[area, 1, 1], [img, 299, 299]]},
   {desc: 'empty string', shape: 'rect', coords: "", hit: hitNone},
   {desc: 'omitted coords', shape: 'rect', coords: null, hit: hitNone},
+  {desc: 'first > third', shape: 'rect', coords: "10,2,2,10", hit: hitRect},
+  {desc: 'second > fourth', shape: 'rect', coords: "2,10,10,2", hit: hitRect},
+  {desc: 'first > third, second > fourth', shape: 'rect', coords: "10,10,2,2", hit: hitRect},
 
   {desc: 'missing value default', shape: null, coords: "2,2,10,10", hit: hitRect},
   {desc: 'missing value default', shape: null, coords: "20,40,10", hit: hitNone},
@@ -70,6 +74,8 @@ var tests = [
   {desc: 'simple', shape: 'CIRC', coords: "20,40,10", hit: hitCircle},
   {desc: 'LATIN CAPITAL LETTER I WITH DOT ABOVE', shape: 'C\u0130RCLE', coords: "20,40,10", hit: hitNone},
   {desc: 'LATIN SMALL LETTER DOTLESS I', shape: 'c\u0131rcle', coords: "20,40,10", hit: hitNone},
+  {desc: 'negative radius', shape: 'circle', coords: "20,40,-10", hit: hitNone},
+  {desc: 'zero radius', shape: 'circle', coords: "20,40,0", hit: hitNone},
 
   {desc: 'simple', shape: 'poly', coords: "100,100,120,100,100,120", hit: hitPoly},
   {desc: 'simple', shape: 'polygon', coords: "100,100,120,100,100,120", hit: hitPoly},
